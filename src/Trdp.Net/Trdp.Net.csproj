@@ -6,6 +6,8 @@
     <AssemblyName>Trdp.Net</AssemblyName>
     <RootNamespace>Trdp.Net</RootNamespace>
     <PackageId>Trdp.Net</PackageId>
+    <!-- Default-Version; im Release-Workflow per -p:Version=... ueberschrieben. -->
+    <Version>0.1.1-alpha</Version>
     <Description>Pure C# / .NET port of the TCNOpen TRDP "Light" stack (Train Real-time Data Protocol, IEC 61375-2-3). Process Data (PD) and Message Data (MD) over UDP/TCP. No native dependencies. Safety layer (SDTv2) intentionally excluded.</Description>
     <PackageTags>trdp;iec-61375;tcn;tcms;railway;train;train-communication;dotnet;csharp;industrial;udp</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
