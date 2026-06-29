@@ -1,0 +1,43 @@
+TRDP.NET
+========
+
+A C# / .NET port of the TCNOpen TRDP "Light" reference implementation of
+the Train Real-time Data Protocol (TRDP), IEC 61375-2-3.
+
+C# port: Copyright 2026 retavi GmbH.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0 (MPL-2.0). If a copy of the MPL was not distributed with
+this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+----------------------------------------------------------------------
+Upstream / original work
+----------------------------------------------------------------------
+
+This is a derivative work (translation to C#) of the TCNOpen TRDP stack:
+
+    Project:   TCNOpen TRDP prototype stack
+    Source:    https://github.com/T12z/TCNopen  (mirror of SourceForge)
+    License:   Mozilla Public License, v. 2.0
+    Copyright: Bombardier Transportation Inc. or its subsidiaries and
+               others, 2013-2021. All rights reserved.
+    Authors:   Bernd Loehr (NewTec GmbH) and the TCNOpen contributors.
+
+Because a source-code translation is a derivative work under the MPL,
+the ported files in this repository remain licensed under MPL-2.0.
+
+----------------------------------------------------------------------
+Scope / intentional omissions
+----------------------------------------------------------------------
+
+The SDTv2 safety layer (IEC 61375-2-3 Annex B, TCNOpen "SDTv2/"
+subtree) is INTENTIONALLY NOT PORTED. This library is NOT safety
+certified and must NOT be used to implement safety-related (SIL)
+functions.
+
+"TCNOpen" and "TRDP" are used here only descriptively to identify the
+protocol implemented. This project is not affiliated with or endorsed
+by TCNOpen, NewTec GmbH, or the IEC.
+
+The IEC 61375 standard text is copyrighted by the IEC and is NOT
+included or redistributed in this repository.

@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Trdp.Net/Trdp.Net.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Trdp.Net.Tests/Trdp.Net.Tests.csproj" />
+  </Folder>
+</Solution>

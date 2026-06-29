@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- net8.0 (LTS) fuer breite Reichweite inkl. Linux/ARM (RevPi); von net10-Apps nutzbar -->
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>Trdp.Net</AssemblyName>
+    <RootNamespace>Trdp.Net</RootNamespace>
+    <PackageId>Trdp.Net</PackageId>
+    <Description>Pure C# / .NET port of the TCNOpen TRDP "Light" stack (Train Real-time Data Protocol, IEC 61375-2-3). Process Data (PD) and Message Data (MD) over UDP/TCP. No native dependencies. Safety layer (SDTv2) intentionally excluded.</Description>
+    <PackageTags>trdp;iec-61375;tcn;tcms;railway;train;train-communication;dotnet;csharp;industrial;udp</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Trdp.Net.Tests" />
+  </ItemGroup>
+
+  <!-- Keine externen Abhaengigkeiten: Sockets/Threads/Memory ueber die BCL. -->
+
+</Project>

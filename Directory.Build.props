@@ -1,0 +1,20 @@
+<Project>
+
+  <PropertyGroup>
+    <Authors>retavi GmbH</Authors>
+    <Company>retavi GmbH</Company>
+    <Version>0.1.0-alpha</Version>
+    <Copyright>Copyright © 2026 retavi GmbH</Copyright>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <NuGetAudit>false</NuGetAudit>
+
+    <!-- Lizenz: Port von TCNOpen TRDP (MPL-2.0) => abgeleitetes Werk bleibt MPL-2.0 -->
+    <PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/retavi-gmbh/TRDP.NET</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/retavi-gmbh/TRDP.NET</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+</Project>
