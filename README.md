@@ -10,7 +10,7 @@ Process Data (PD) and Message Data (MD) over UDP/TCP, no native dependencies, ru
 
 ## Why
 
-TRDP is the standard real-time data protocol for modern train networks (TCN / ECN / ETB). The reference implementation [TCNOpen TRDP](https://github.com/T12z/TCNopen) is excellent but written in C for embedded targets. **TRDP.NET brings it to managed .NET** — no P/Invoke, no native build per platform, directly consumable from C# applications and frameworks.
+TRDP is the standard real-time data protocol for modern train networks (TCN / ECN / ETB). The reference implementation [TCNOpen TRDP](https://sourceforge.net/projects/tcnopen/) is excellent but written in C for embedded targets. **TRDP.NET brings it to managed .NET** — no P/Invoke, no native build per platform, directly consumable from C# applications and frameworks.
 
 ## Quickstart (Process Data)
 
@@ -100,4 +100,4 @@ tests/Trdp.Net.Tests/   # xUnit tests, validated against the original stack
 
 ## Acknowledgements
 
-This project would not exist without the [TCNOpen](https://github.com/T12z/TCNopen) initiative and its contributors (notably Bernd Loehr, NewTec GmbH).
+This project would not exist without the [TCNOpen](https://sourceforge.net/projects/tcnopen/) initiative (hosted on SourceForge) and its contributors (notably Bernd Loehr, NewTec GmbH).

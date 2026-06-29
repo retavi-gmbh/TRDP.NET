@@ -1,7 +1,7 @@
 # Porting map: TCNOpen TRDP (C) → TRDP.NET (C#)
 
 Living document tracking the port of the TCNOpen TRDP "Light" stack to managed C#.
-Upstream reference: https://github.com/T12z/TCNopen (MPL-2.0).
+Upstream reference: TCNOpen on SourceForge — https://sourceforge.net/projects/tcnopen/ (MPL-2.0).
 
 ## Principles
 

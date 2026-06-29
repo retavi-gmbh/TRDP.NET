@@ -17,7 +17,7 @@ Upstream / original work
 This is a derivative work (translation to C#) of the TCNOpen TRDP stack:
 
     Project:   TCNOpen TRDP prototype stack
-    Source:    https://github.com/T12z/TCNopen  (mirror of SourceForge)
+    Source:    https://sourceforge.net/projects/tcnopen/  (official home)
     License:   Mozilla Public License, v. 2.0
     Copyright: Bombardier Transportation Inc. or its subsidiaries and
                others, 2013-2021. All rights reserved.
