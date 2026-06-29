@@ -117,6 +117,46 @@ now reports the actually-bound port.
 
 **Net result: everything except the SDTv2 safety layer (and its SC-32 checksum) is ported.**
 
+## Conformance review vs. the C reference
+
+A line-by-line review against the TCNOpen C source surfaced the following. **Fixed**
+(with regression tests):
+
+- **PD: 4-byte data padding** (`trdp_packetSizePD`) — PD frames are now padded to a
+  4-byte boundary like MD; `datasetLength` stays unpadded.
+- **PD: receive sequence logic** — only a publisher restart (`seq==0`) or a real forward
+  step (`seq>curSeqCnt`) is accepted; old/re-ordered/duplicate telegrams are dropped and
+  the counter no longer runs backward (`trdp_pdcom.c:908-916`).
+- **PD + MD: protocol-version check** now masks the high byte (`& 0xFF00`,
+  `TRDP_PROTOCOL_VERSION_CHECK_MASK`) so future `0x01xx` minor versions are accepted.
+- **PD + MD: topo-counter validation** on receive (`trdp_validTopoCounters`): expected
+  counter `0` = accept any, otherwise the frame's counter must match.
+- **MD: infinite reply-timeout** is encoded on the wire as `0` (not the API sentinel
+  `0xFFFFFFFF`) — a replier reads `0 && Mr` as infinite (`tlm_if.c:340`, `trdp_mdcom.c:1781`).
+- **MD: confirm (Mc)** goes to the fixed MD UDP port (the replyPort special-case applies
+  only to Mp/Mq, `trdp_mdcom.c:2343-2356`).
+- **MD: listener dispatch** stops at the first matching comId listener (`break`).
+
+**Verified correct (no change needed):** CRC/FCS algorithm + table, PD/MD header
+sizes/offsets/endianness (FCS LE quirk), all constants/msgTypes, `TRDP_ERR_T`, and **every
+audited TAU wire struct** (SRM 64 B, ECSP 40/40/40/1556 B, OP_VEHICLE 24 B, PD100 72 B,
+TCN_URI 92 B, …). Marshalling wire sizes incl. TIMEDATE48/64.
+
+**False positive (verified, NOT changed):** a reviewer claimed the initial PD sequence
+counter is `0xFFFFFFFF` (first telegram `seq==0`). The C `curSeqCnt` is zero-initialized
+(no such assignment exists) and pre-incremented → first telegram `seq==1`, exactly as the
+port. Left unchanged.
+
+**Deliberate deviations (documented, not bugs):**
+- PD pull (Pr/Pp/Pe), `toBehavior` zero-on-timeout, and per-(source,comId) sequence
+  tracking are not implemented (single-stream supervision; pass a source filter for
+  multi-publisher comIds).
+- MD: server-side confirm handling/timeout, request retries, `Me`-on-no-listener,
+  listener URI/IP/MC filtering, TCP idle-connection cleanup, and `confirmTimeout` carried
+  in the Mq header are not (yet) ported.
+- PD subscribe `timeoutMs==0` means *no* supervision (managed-API choice); the C default
+  of 100 ms applies only when you pass it explicitly.
+
 ## Validation backlog
 
 - [x] Loopback interop within the library (PdPublisher → UDP → PdSubscriber).

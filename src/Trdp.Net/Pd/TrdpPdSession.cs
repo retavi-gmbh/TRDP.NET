@@ -68,9 +68,14 @@ namespace Trdp.Net.Pd
         /// <summary>
         /// DE: Abonniert ein PD-Telegramm (tlp_subscribe).
         /// </summary>
-        public PdSubscriber Subscribe(uint comId, int timeoutMs = 0, IPAddress? sourceFilter = null)
+        public PdSubscriber Subscribe(uint comId, int timeoutMs = 0, IPAddress? sourceFilter = null,
+                                      uint etbTopoCnt = 0, uint opTrnTopoCnt = 0)
         {
-            var sub = new PdSubscriber(comId, timeoutMs, sourceFilter);
+            var sub = new PdSubscriber(comId, timeoutMs, sourceFilter)
+            {
+                ExpectedEtbTopoCnt = etbTopoCnt,
+                ExpectedOpTrnTopoCnt = opTrnTopoCnt,
+            };
             _subscribers.Add(sub);
             return sub;
         }
@@ -150,9 +155,9 @@ namespace Trdp.Net.Pd
 
             PdHeader header = PdHeader.Parse(frame);
 
-            // Protokollversion (0x0100 oder 0x0101).
-            if (header.ProtocolVersion != TrdpConstants.ProtocolVersion &&
-                header.ProtocolVersion != TrdpConstants.ProtocolVersionServiceId)
+            // DE: Protokollversion: nur High-Byte pruefen (TRDP_PROTOCOL_VERSION_CHECK_MASK = 0xFF00),
+            // damit kuenftige Minor-Versionen (0x01xx) akzeptiert werden — wie trdp_pdCheck.
+            if ((header.ProtocolVersion & 0xFF00) != (TrdpConstants.ProtocolVersion & 0xFF00))
             {
                 return;
             }

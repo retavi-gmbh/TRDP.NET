@@ -33,8 +33,7 @@ namespace Trdp.Net.Marshalling
         {
             // DE: Groesse wertabhaengig bestimmen (variable Arrays!), dann schreiben.
             int vi = 0;
-            uint varSize = 0;
-            int size = MeasureDataset(dataset, values, ref vi, ref varSize);
+            int size = MeasureDataset(dataset, values, ref vi, 1);
 
             if (vi != values.Count)
             {
@@ -45,8 +44,7 @@ namespace Trdp.Net.Marshalling
             var buffer = new byte[size];
             var writer = new TrdpWireWriter(buffer);
             vi = 0;
-            varSize = 0;
-            WriteDataset(ref writer, dataset, values, ref vi, ref varSize);
+            WriteDataset(ref writer, dataset, values, ref vi, 1);
             return buffer;
         }
 
@@ -55,8 +53,7 @@ namespace Trdp.Net.Marshalling
         {
             var values = new List<object>();
             var reader = new TrdpWireReader(wire);
-            uint varSize = 0;
-            ReadDataset(ref reader, dataset, values, ref varSize);
+            ReadDataset(ref reader, dataset, values, 1);
             return values.ToArray();
         }
 
@@ -93,13 +90,20 @@ namespace Trdp.Net.Marshalling
         public int ComputeSize(TrdpDataset dataset, IReadOnlyList<object> values)
         {
             int vi = 0;
-            uint varSize = 0;
-            return MeasureDataset(dataset, values, ref vi, ref varSize);
+            return MeasureDataset(dataset, values, ref vi, 1);
         }
 
-        // DE: Wertabhaengige Groessenbestimmung; spiegelt WriteDataset (inkl. var_size-Mechanik).
-        private int MeasureDataset(TrdpDataset dataset, IReadOnlyList<object> values, ref int vi, ref uint varSize)
+        // DE: Maximale Verschachtelungstiefe (TAU_MAX_DS_LEVEL) — verhindert StackOverflow bei
+        // fehlkonfigurierten/zyklischen Datasets, wie marshallDs mit TRDP_STATE_ERR.
+        private const int MaxDsLevel = 5;
+
+        // DE: var_size ist im C-Original eine LOKALE Variable je marshallDs-Aufruf (0-initialisiert);
+        // Rekursion in nested Datasets bekommt ein frisches var_size und beeinflusst das Eltern-var_size
+        // NICHT. Daher hier ebenfalls lokal (kein ref durch die Rekursion). vi bleibt der globale Index.
+        private int MeasureDataset(TrdpDataset dataset, IReadOnlyList<object> values, ref int vi, int level)
         {
+            if (level > MaxDsLevel) throw new InvalidOperationException($"Dataset-Verschachtelung zu tief (> {MaxDsLevel}).");
+            uint varSize = 0;
             int size = 0;
             foreach (TrdpDatasetElement el in dataset.Elements)
             {
@@ -108,13 +112,13 @@ namespace Trdp.Net.Marshalling
                 {
                     if (el.IsNested)
                     {
-                        size += MeasureDataset(_registry.Get(el.Type), values, ref vi, ref varSize);
+                        size += MeasureDataset(_registry.Get(el.Type), values, ref vi, level + 1);
                     }
                     else
                     {
                         if (vi >= values.Count)
                             throw new ArgumentException("Zu wenige Werte fuer das Dataset.", nameof(values));
-                        if (n == 0) varSize = ToUInt(values[vi]); // var_size = erster Wert dieses Elements
+                        if (n == 0) UpdateVarSize((TrdpDataType)el.Type, values[vi], ref varSize);
                         size += TrdpDataTypeInfo.WireSize((TrdpDataType)el.Type);
                         vi++;
                     }
@@ -124,8 +128,10 @@ namespace Trdp.Net.Marshalling
         }
 
         private void WriteDataset(ref TrdpWireWriter w, TrdpDataset dataset, IReadOnlyList<object> values,
-                                  ref int vi, ref uint varSize)
+                                  ref int vi, int level)
         {
+            if (level > MaxDsLevel) throw new InvalidOperationException($"Dataset-Verschachtelung zu tief (> {MaxDsLevel}).");
+            uint varSize = 0;
             foreach (TrdpDatasetElement el in dataset.Elements)
             {
                 uint count = el.IsVariable ? varSize : el.Count;
@@ -133,21 +139,23 @@ namespace Trdp.Net.Marshalling
                 {
                     if (el.IsNested)
                     {
-                        WriteDataset(ref w, _registry.Get(el.Type), values, ref vi, ref varSize);
+                        WriteDataset(ref w, _registry.Get(el.Type), values, ref vi, level + 1);
                     }
                     else
                     {
                         if (vi >= values.Count)
                             throw new ArgumentException("Zu wenige Werte fuer das Dataset.", nameof(values));
-                        if (n == 0) varSize = ToUInt(values[vi]);
+                        if (n == 0) UpdateVarSize((TrdpDataType)el.Type, values[vi], ref varSize);
                         WriteScalar(ref w, (TrdpDataType)el.Type, values[vi++]);
                     }
                 }
             }
         }
 
-        private void ReadDataset(ref TrdpWireReader r, TrdpDataset dataset, List<object> values, ref uint varSize)
+        private void ReadDataset(ref TrdpWireReader r, TrdpDataset dataset, List<object> values, int level)
         {
+            if (level > MaxDsLevel) throw new InvalidOperationException($"Dataset-Verschachtelung zu tief (> {MaxDsLevel}).");
+            uint varSize = 0;
             foreach (TrdpDatasetElement el in dataset.Elements)
             {
                 uint count = el.IsVariable ? varSize : el.Count;
@@ -155,15 +163,33 @@ namespace Trdp.Net.Marshalling
                 {
                     if (el.IsNested)
                     {
-                        ReadDataset(ref r, _registry.Get(el.Type), values, ref varSize);
+                        ReadDataset(ref r, _registry.Get(el.Type), values, level + 1);
                     }
                     else
                     {
                         object v = ReadScalar(ref r, (TrdpDataType)el.Type);
-                        if (n == 0) varSize = ToUInt(v); // var_size = erster gelesener Wert
+                        if (n == 0) UpdateVarSize((TrdpDataType)el.Type, v, ref varSize);
                         values.Add(v);
                     }
                 }
+            }
+        }
+
+        // DE: var_size = *pSrc im Original — aber nur fuer Elemente mit Wire-Groesse 1/2/4 gesetzt
+        // (die 64-bit-/TIMEDATE48/64-Faelle aktualisieren var_size NICHT). REAL32 wird als rohe
+        // 32-Bit-IEEE754-Repraesentation interpretiert (wie *(UINT32*)pSrc32 im C-Code).
+        private static void UpdateVarSize(TrdpDataType type, object value, ref uint varSize)
+        {
+            switch (TrdpDataTypeInfo.WireSize(type))
+            {
+                case 1:
+                case 2:
+                case 4:
+                    varSize = type == TrdpDataType.Real32
+                        ? BitConverter.SingleToUInt32Bits(Convert.ToSingle(value))
+                        : ToUInt(value);
+                    break;
+                // 6 (TIMEDATE48) und 8 (INT64/UINT64/REAL64/TIMEDATE64): var_size unveraendert.
             }
         }
 

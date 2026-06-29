@@ -52,6 +52,9 @@ namespace Trdp.Net.Md
         public int SourcePort { get; init; }
         public uint SequenceCounter { get; init; }
 
+        /// <summary>DE: Reply-/Confirm-Timeout aus dem Header in µs (0 = unendlich bei Mr).</summary>
+        public uint ReplyTimeoutUs { get; init; }
+
         /// <summary>DE: Transport, ueber den geantwortet wird (UDP oder TCP).</summary>
         internal IMdReplyTarget? ReplyTarget { get; init; }
 

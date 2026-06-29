@@ -92,7 +92,9 @@ namespace Trdp.Net.Md
         {
             byte[] sessionId = NewSessionId();
             long deadline = replyTimeoutMs <= 0 ? long.MaxValue : NowMs + replyTimeoutMs;
-            uint replyTimeoutUs = replyTimeoutMs <= 0 ? TrdpConstants.InfiniteTimeout : (uint)replyTimeoutMs * 1000u;
+            // DE: Wire-Kodierung fuer "unendlich" ist 0 (NICHT der API-Sentinel 0xFFFFFFFF) — ein Replier
+            // interpretiert replyTimeout==0 && msgType==Mr als unendlich (tlm_if.c:340, trdp_mdcom.c:1781).
+            uint replyTimeoutUs = replyTimeoutMs <= 0 ? 0u : (uint)replyTimeoutMs * 1000u;
 
             var caller = new MdCaller(this, comId, sessionId, numReplies, deadline);
             IMdReplyTarget target = ResolveTarget(destIp, destPort, useTcp);
@@ -118,8 +120,10 @@ namespace Trdp.Net.Md
         {
             int len = BuildFrame(MdMessageType.Confirm, caller.ComId, NextSeq(), caller.SessionId, 0u, replyStatus,
                                  ReadOnlySpan<byte>.Empty, null, null);
+            // DE: Confirm (Mc) geht an den FESTEN MD-UDP-Port (17225) — der replyPort-Sonderfall gilt
+            // nur fuer Mp/Mq (trdp_mdcom.c:2343-2356). Bei TCP ueber dieselbe Verbindung (caller.Transport).
             IMdReplyTarget target = caller.Transport
-                ?? new UdpReplyTarget(this, caller.LastReplyIp, caller.LastReplyPort);
+                ?? new UdpReplyTarget(this, caller.LastReplyIp, TrdpConstants.MdUdpPort);
             target.Send(_txBuffer.AsSpan(0, len));
             MessagesSent++;
         }
@@ -189,12 +193,19 @@ namespace Trdp.Net.Md
 
             MdHeader header = MdHeader.Parse(frame);
 
-            if (header.ProtocolVersion != TrdpConstants.ProtocolVersion &&
-                header.ProtocolVersion != TrdpConstants.ProtocolVersionServiceId)
+            // DE: Protokollversion nur im High-Byte pruefen (MASK 0xFF00) wie trdp_mdCheck.
+            if ((header.ProtocolVersion & 0xFF00) != (TrdpConstants.ProtocolVersion & 0xFF00))
             {
                 return;
             }
             if (!Enum.IsDefined(typeof(MdMessageType), header.MsgType))
+            {
+                return;
+            }
+            // DE: Topo-Validierung (trdp_validTopoCounters): erwartete Session-Topo 0 => beliebig,
+            // sonst muss der Frame-Topozaehler passen.
+            if ((EtbTopoCount != 0 && header.EtbTopoCnt != EtbTopoCount) ||
+                (OpTrnTopoCount != 0 && header.OpTrnTopoCnt != OpTrnTopoCount))
             {
                 return;
             }
@@ -215,6 +226,7 @@ namespace Trdp.Net.Md
                 SourceIp = target.RemoteIp,
                 SourcePort = target.RemotePort,
                 SequenceCounter = header.SequenceCounter,
+                ReplyTimeoutUs = header.ReplyTimeout,
                 ReplyTarget = target,
                 IsTcp = isTcp,
             };
@@ -224,11 +236,14 @@ namespace Trdp.Net.Md
             {
                 case MdMessageType.Request:
                 case MdMessageType.Notify:
+                    // DE: Ersten passenden Listener nehmen und abbrechen (wie trdp_mdcom.c:1736-1772),
+                    // damit auf dieselbe comId nicht mehrfach (ggf. mehrfach geantwortet) wird.
                     foreach (MdListener listener in _listeners)
                     {
                         if (listener.ComId == msg.ComId)
                         {
                             listener.Raise(new MdRequestContext(this, msg));
+                            break;
                         }
                     }
                     break;

@@ -27,6 +27,12 @@ namespace Trdp.Net.Pd
         /// <summary>DE: Ueberwachungszeit in ms; 0 = keine Timeout-Ueberwachung.</summary>
         public int TimeoutMs { get; }
 
+        /// <summary>DE: Erwarteter ETB-Topozaehler; 0 = beliebig akzeptieren (trdp_validTopoCounters).</summary>
+        public uint ExpectedEtbTopoCnt { get; set; }
+
+        /// <summary>DE: Erwarteter OpTrain-Topozaehler; 0 = beliebig akzeptieren.</summary>
+        public uint ExpectedOpTrnTopoCnt { get; set; }
+
         /// <summary>DE: Zuletzt empfangene Nettodaten (Kopie) oder null.</summary>
         public byte[]? LastData { get; private set; }
 
@@ -65,6 +71,10 @@ namespace Trdp.Net.Pd
         {
             if (header.ComId != ComId) return false;
             if (SourceFilter != null && !SourceFilter.Equals(src)) return false;
+            // DE: Topo-Validierung (trdp_validTopoCounters): erwarteter Wert 0 => beliebig, sonst muss
+            // der Frame-Topozaehler exakt passen (veraltete/fremde Telegramme verwerfen).
+            if (ExpectedEtbTopoCnt != 0 && header.EtbTopoCnt != ExpectedEtbTopoCnt) return false;
+            if (ExpectedOpTrnTopoCnt != 0 && header.OpTrnTopoCnt != ExpectedOpTrnTopoCnt) return false;
             return true;
         }
 
@@ -78,14 +88,16 @@ namespace Trdp.Net.Pd
 
             if (_hasSeq)
             {
-                if (newSeq == SequenceCounter)
-                {
-                    // Duplikat -> ignorieren.
-                    return;
-                }
-                if (newSeq > SequenceCounter + 1u)
+                // DE: Luecken zaehlen (#395): nur bei echtem Vorwaertssprung und vorherigem Empfang.
+                if (newSeq > 0u && newSeq > SequenceCounter + 1u)
                 {
                     MissedCount += newSeq - SequenceCounter - 1u;
+                }
+                // DE: Akzeptieren NUR bei Publisher-Restart (newSeq==0) oder echtem Vorwaertssprung (#394,
+                // trdp_pdcom.c:914). Aeltere/duplizierte/umsortierte Telegramme verwerfen, Zaehler bleibt.
+                if (newSeq != 0u && newSeq <= SequenceCounter)
+                {
+                    return;
                 }
             }
 

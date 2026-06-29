@@ -57,8 +57,17 @@ namespace Trdp.Net.Core
         /// <summary>Maximale PD-Frame-Groesse (Header + max. Daten), TRDP_MAX_PD_PACKET_SIZE.</summary>
         public const int MaxPdPacketSize = PdHeader.Size + MaxPdDataSize;
 
-        /// <summary>DE: Bruttogroesse eines PD-Frames = Header + Daten (trdp_packetSizePD).</summary>
-        public static int PacketSizePd(int dataSize) => PdHeader.Size + dataSize;
+        /// <summary>
+        /// DE: Bruttogroesse eines PD-Frames = Header + Daten, Daten auf 4 Byte gepaddet
+        /// (trdp_packetSizePD). Header-only, wenn dataSize == 0.
+        /// </summary>
+        public static int PacketSizePd(int dataSize)
+        {
+            if (dataSize == 0) return PdHeader.Size;
+            int padded = dataSize;
+            if ((dataSize & 0x3) > 0) padded += 4 - dataSize % 4;
+            return PdHeader.Size + padded;
+        }
 
         /// <summary>Maximale MD-Datenlaenge in Bytes (TRDP_MAX_MD_DATA_SIZE).</summary>
         public const int MaxMdDataSize = 65388;

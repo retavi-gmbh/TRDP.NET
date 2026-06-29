@@ -95,7 +95,8 @@ namespace Trdp.Net.Pd
             if (dest.Length < gross)
                 throw new ArgumentException($"Puffer zu klein: {dest.Length} < {gross}.", nameof(dest));
 
-            // DE: Sequenzzaehler hochzaehlen (erstes Telegramm => 1), wie trdp_pdUpdate.
+            // DE: Sequenzzaehler hochzaehlen. curSeqCnt startet (wie der genullte C-Alloc) bei 0,
+            // Pre-Increment -> erstes Telegramm hat seq=1, exakt wie trdp_pdUpdate (curSeqCnt++).
             SequenceCounter++;
 
             var header = new PdHeader
@@ -117,6 +118,12 @@ namespace Trdp.Net.Pd
             if (_data.Length > 0)
             {
                 _data.AsSpan().CopyTo(dest.Slice(PdHeader.Size, _data.Length));
+            }
+            // DE: Padding-Bytes (Daten auf 4 gepaddet) nullen — Puffer wird wiederverwendet.
+            int dataEnd = PdHeader.Size + _data.Length;
+            if (gross > dataEnd)
+            {
+                dest.Slice(dataEnd, gross - dataEnd).Clear();
             }
             // FCS ueber die Header-Bytes (0..35), little-endian gespeichert.
             header.UpdateFrameCheckSum(dest.Slice(0, PdHeader.Size));
