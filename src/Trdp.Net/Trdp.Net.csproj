@@ -8,10 +8,16 @@
     <PackageId>Trdp.Net</PackageId>
     <Description>Pure C# / .NET port of the TCNOpen TRDP "Light" stack (Train Real-time Data Protocol, IEC 61375-2-3). Process Data (PD) and Message Data (MD) over UDP/TCP. No native dependencies. Safety layer (SDTv2) intentionally excluded.</Description>
     <PackageTags>trdp;iec-61375;tcn;tcms;railway;train;train-communication;dotnet;csharp;industrial;udp</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Trdp.Net.Tests" />
+    <!-- README ins Paket aufnehmen (zeigt auf nuget.org an). -->
+    <None Include="../../README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <!-- Keine externen Abhaengigkeiten: Sockets/Threads/Memory ueber die BCL. -->

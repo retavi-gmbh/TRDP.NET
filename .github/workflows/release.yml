@@ -1,0 +1,51 @@
+name: Release (NuGet)
+
+# Manuell ausgeloest. Erfordert das Repository-Secret NUGET_API_KEY.
+# Veroeffentlicht NICHT automatisch — nur wenn du diesen Workflow startest.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'NuGet package version (z. B. 0.1.0-alpha)'
+        required: true
+        default: '0.1.0-alpha'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Test
+        run: dotnet test Trdp.Net.slnx -c Release
+
+      - name: Pack
+        run: >
+          dotnet pack src/Trdp.Net/Trdp.Net.csproj -c Release
+          -o ./artifacts -p:Version=${{ github.event.inputs.version }}
+
+      - name: Upload artifact (immer verfuegbar, voll loeschbar)
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkg
+          path: ./artifacts/*
+
+      - name: Push to NuGet.org
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          if [ -z "$NUGET_API_KEY" ]; then
+            echo "Kein NUGET_API_KEY gesetzt -> nur Artifact, kein Push.";
+            exit 0;
+          fi
+          dotnet nuget push "./artifacts/*.nupkg" \
+            --api-key "$NUGET_API_KEY" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
