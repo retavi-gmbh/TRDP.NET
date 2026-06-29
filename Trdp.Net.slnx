@@ -5,4 +5,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/Trdp.Net.Tests/Trdp.Net.Tests.csproj" />
   </Folder>
+  <Folder Name="/examples/">
+    <Project Path="examples/Trdp.Net.Examples/Trdp.Net.Examples.csproj" />
+  </Folder>
 </Solution>

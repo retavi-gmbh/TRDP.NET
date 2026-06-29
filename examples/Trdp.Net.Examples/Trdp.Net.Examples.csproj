@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- Mehrfachziel: net8.0 (LTS, wie die Lib) zum Bauen, net10.0 zum lokalen Ausfuehren. -->
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <AssemblyName>trdp-examples</AssemblyName>
+    <RootNamespace>Trdp.Net.Examples</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Trdp.Net/Trdp.Net.csproj" />
+  </ItemGroup>
+
+</Project>
